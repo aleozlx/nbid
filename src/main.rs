@@ -10,8 +10,6 @@ use std::collections::HashMap;
 use std::io::prelude::*;
 use regex::Regex;
 
-// TODO strip symbol table.
-
 fn ppid(pid: u32) -> Option<u32> {
     let mut f = File::open(&format!("/proc/{}/stat", pid)).ok()?;
     let mut contents = String::new();
@@ -33,7 +31,7 @@ fn main() {
         println!("Seriously?");
         std::process::exit(0);
     }
-    // TODO self check mod 110.
+
     let ppid = ppid(process::id()).unwrap();
     let ref cmd = cmdline(ppid).unwrap();
     let rule_cmd = Regex::new(r"/dsa/home/(?P<pawprint>\w+)/.*/kernel-(?P<kernel_id>.*)\.json").unwrap();
