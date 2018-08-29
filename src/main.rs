@@ -1,6 +1,8 @@
 // cargo build --release --target x86_64-unknown-linux-musl && strip target/x86_64-unknown-linux-musl/release/nbid 
 extern crate regex;
 
+extern { fn anti_ptrace() -> i32; }
+
 use std::process;
 use std::env;
 use std::fs::File;
@@ -27,7 +29,10 @@ fn cmdline(pid: u32) -> Option<String> {
 }
 
 fn main() {
-    // TODO double ptrace test.
+    if unsafe {anti_ptrace()} == -1 {
+        println!("Seriously?");
+        std::process::exit(0);
+    }
     // TODO self check mod 110.
     let ppid = ppid(process::id()).unwrap();
     let ref cmd = cmdline(ppid).unwrap();
