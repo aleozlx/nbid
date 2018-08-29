@@ -1,4 +1,4 @@
-// cargo build --release --target x86_64-unknown-linux-musl
+// cargo build --release --target x86_64-unknown-linux-musl && strip target/x86_64-unknown-linux-musl/release/nbid 
 extern crate regex;
 
 use std::process;
@@ -7,6 +7,8 @@ use std::fs::File;
 use std::collections::HashMap;
 use std::io::prelude::*;
 use regex::Regex;
+
+// TODO strip symbol table.
 
 fn ppid(pid: u32) -> Option<u32> {
     let mut f = File::open(&format!("/proc/{}/stat", pid)).ok()?;
@@ -25,6 +27,8 @@ fn cmdline(pid: u32) -> Option<String> {
 }
 
 fn main() {
+    // TODO double ptrace test.
+    // TODO self check mod 110.
     let ppid = ppid(process::id()).unwrap();
     let ref cmd = cmdline(ppid).unwrap();
     let rule_cmd = Regex::new(r"/dsa/home/(?P<pawprint>\w+)/.*/kernel-(?P<kernel_id>.*)\.json").unwrap();
@@ -36,6 +40,10 @@ fn main() {
         facts.insert(String::from("pawprint"), cmd_caps.name("pawprint").unwrap().as_str().to_owned());
         facts.insert(String::from("kernel_id"), cmd_caps.name("kernel_id").unwrap().as_str().to_owned());
     }
+    else {
+        println!("Don't call me. Go away!");
+        std::process::exit(0);
+    }
     
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
@@ -45,12 +53,12 @@ fn main() {
             facts.insert(String::from("notebook"), url_caps.name("notebook").unwrap().as_str().to_owned());
         }
     }
-    else {
-        println!("<table>");
-        println!("<th><td>Key</td><td>Value</td></tg>");
-        for (k, v) in facts.iter() {
-            println!("<tr><td>{}</td><td>{}</td></tr>", k, v);
-        }
-        println!("</table>");
+    println!("<table>");
+    println!("<tr><th>Key</th><th>Value</th></tr>");
+    for (k, v) in facts.iter() {
+        println!("<tr><td>{}</td><td>{}</td></tr>", k, v);
     }
+    println!("</table>");
+
+    // last modify stat -c %y nbid_demo.ipynb
 }
