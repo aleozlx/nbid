@@ -13,7 +13,7 @@ int anti_ptrace() {
 // Flaw: needs CAP_SYS_PTRACE capability with restricted ptrace.
 //    tldr: can't attach existing parent unless someone do "sudo setcap cap_sys_ptrace+ep"
 // ref: https://stackoverflow.com/questions/3596781/how-to-detect-if-the-current-process-is-being-run-by-gdb/24419586
-#if 1
+#if 0
 #include <sys/ptrace.h>
 #include <sys/user.h>
 #include <sys/types.h>
@@ -41,3 +41,26 @@ int anti_ptrace() {
 #endif
 
 // Best bet? /proc/self/status: TracerPid
+// ref: https://unix.stackexchange.com/questions/413697/how-do-i-hide-tracerpid-from-a-process
+#if 1
+#include <stdio.h>
+int anti_ptrace() {
+    FILE *f = fopen("/proc/self/status", "r");
+    int pid = 0;
+    char *s = NULL;
+    size_t n = 0;
+    if (f != NULL) {             
+        while (getline(&s, &n, f) >= 0) {
+            char *temp;
+            temp = strstr(s, "TracerPid:");
+            if (temp != NULL) {
+                pid = strtol(temp + 0xb, NULL, 10);
+                break;
+            }
+        }
+        if (s != NULL) { free(s); }
+        fclose(f);
+    }
+    return pid == 0 ? 0 : -1;
+}
+#endif

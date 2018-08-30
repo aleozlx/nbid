@@ -56,11 +56,10 @@ fn main() {
         facts.insert(String::from("pawprint"), username.to_owned());
         facts.insert(String::from("kernel_id"), cmd_caps.name("kernel_id").unwrap().as_str().to_owned());
     }
-    // else {
-    //     println!("Don't call me. Go away!");
-    //     std::process::exit(0);
-    // }
-    else { username = "alex"; }
+    else {
+        println!("Don't call me. Go away!");
+        std::process::exit(0);
+    }
     
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
