@@ -41,6 +41,25 @@ fn copy_user_info(facts: &mut HashMap<String, String>, user: &str) {
     
 }
 
+fn stat_notebook(facts: &mut HashMap<String, String>) {
+    let mut stat_out;
+    if let Some(home_dir) = facts.get("home_dir") {
+        if let Some(notebook) = facts.get("notebook") {
+            let notebook_path = std::path::Path::new(home_dir).join(notebook);
+            let notebook_path = notebook_path.to_str().unwrap();
+            if let Some(output) = std::process::Command::new("stat").args(&["-c", "%y", notebook_path]).output().ok() {
+                stat_out = String::from_utf8_lossy(&output.stdout).into_owned();
+                let len = stat_out.len();
+                stat_out.truncate(len - 1); // remove trailing \n
+            }
+            else { return; }
+        }
+        else { return; }
+    }
+    else { return; }
+    facts.insert(String::from("last_modified"), stat_out);
+}
+
 fn main() {
     panic::set_hook(Box::new(|_info| {}));
     if unsafe {anti_ptrace()} == -1 {
@@ -70,13 +89,22 @@ fn main() {
         let notebook_path = &args[1];
         facts.insert(String::from("notebook"), notebook_path.to_owned());
     }
-
     if !facts.contains_key("sso_url") {
         copy_user_info(&mut facts, username);
     }
+    stat_notebook(&mut facts); // TODO requires home_dir now
+
+    // openssl enc -aes-256-cbc -salt -out .aml-signature -k PASS
+    // openssl enc -aes-256-cbc -d -in .aml-signature -k PASS
+    let mut ssl = std::process::Command::new("openssl")
+        .args(&["enc", "-aes-256-cbc", "-salt", "-out", ".aml-signature", "-k", include_str!("aml-signature.secret")])
+        .stdin(std::process::Stdio::piped()).spawn().expect("error: openssl");
+        
+    let ssl_pipe = ssl.stdin.as_mut().unwrap();
     for (k, v) in facts.iter() {
-        println!("{} {}", k, v);
+        // println!("{} {}", k, v);
+        ssl_pipe.write(&format!("{} {}\n", k, v).as_bytes()).expect("I/O error");
     }
 
-    // last modify stat -c %y nbid_demo.ipynb
+
 }

@@ -2,3 +2,4 @@
 **/*.rs.bk
 libanti_ptrace/
 build_anti-ptrace/
+*.secret
