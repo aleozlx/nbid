@@ -1,5 +1,6 @@
 // cargo build --release --target x86_64-unknown-linux-musl && strip target/x86_64-unknown-linux-musl/release/nbid 
 extern crate regex;
+extern crate chrono;
 
 extern { fn anti_ptrace() -> i32; }
 
@@ -9,6 +10,7 @@ use std::fs::File;
 use std::collections::HashMap;
 use std::io::prelude::*;
 use regex::Regex;
+use chrono::prelude::*;
 
 fn ppid(pid: u32) -> Option<u32> {
     let mut f = File::open(&format!("/proc/{}/stat", pid)).ok()?;
@@ -46,14 +48,14 @@ fn main() {
 
     let ppid = ppid(process::id()).unwrap();
     let ref cmd = cmdline(ppid).unwrap();
-    let rule_cmd = Regex::new(r"/dsa/home/(?P<pawprint>\w+)/.*/kernel-(?P<kernel_id>.*)\.json").unwrap();
-    let rule_url = Regex::new(r"user/(?P<pawprint>\w+)/notebooks/(?P<notebook>.*)$").unwrap();
+    let rule_cmd = Regex::new(r"/dsa/home/(?P<sso>\w+)/.*/kernel-(?P<kernel_id>.*)\.json").unwrap();
+    // let rule_url = Regex::new(r"user/(?P<sso>\w+)/notebooks/(?P<notebook>.*)$").unwrap();
     let mut facts = HashMap::new();
     facts.insert(String::from("pid"), ppid.to_string().to_owned());
     let username;
     if let Some(cmd_caps) = rule_cmd.captures(cmd) {
-        username = cmd_caps.name("pawprint").unwrap().as_str();
-        facts.insert(String::from("pawprint"), username.to_owned());
+        username = cmd_caps.name("sso").unwrap().as_str();
+        facts.insert(String::from("sso"), username.to_owned());
         facts.insert(String::from("kernel_id"), cmd_caps.name("kernel_id").unwrap().as_str().to_owned());
     }
     else {
@@ -63,27 +65,27 @@ fn main() {
     
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
-        let url = &args[1];
-        if let Some(url_caps) = rule_url.captures(url) {
-            facts.insert(String::from("notebook"), url_caps.name("notebook").unwrap().as_str().to_owned());
-            let pawprint_url = url_caps.name("pawprint").unwrap().as_str().to_owned();
-            if facts["pawprint"] != pawprint_url {
-                // pawprint_url appears when it doesn't match pawprint from cmdline, which is fishy.
-                facts.insert(String::from("pawprint_url"), url_caps.name("pawprint").unwrap().as_str().to_owned());
-                facts.entry(String::from("suspicious")).or_insert(String::from("yes"));
-            }
-        }
+        let notebook_path = &args[1];
+        // if let Some(url_caps) = rule_url.captures(url) {
+        //     facts.insert(String::from("notebook"), url_caps.name("notebook").unwrap().as_str().to_owned());
+        //     let sso_url = url_caps.name("sso").unwrap().as_str().to_owned();
+        //     if facts["sso"] != sso_url {
+        //         // sso_url appears when it doesn't match sso from cmdline, which is fishy.
+        //         facts.insert(String::from("sso_url"), url_caps.name("sso").unwrap().as_str().to_owned());
+        //         facts.entry(String::from("suspicious")).or_insert(String::from("yes"));
+        //     }
+        // }
     }
 
-    if !facts.contains_key("pawprint_url") {
+    if !facts.contains_key("sso_url") {
         copy_user_info(&mut facts, username);
     }
-    println!("<table>");
-    println!("<tr><th>Key</th><th>Value</th></tr>");
     for (k, v) in facts.iter() {
-        println!("<tr><td>{}</td><td>{}</td></tr>", k, v);
+        println!("{} {}", k, v);
     }
-    println!("</table>");
+    
+    let datetime: DateTime<Local> = Local::now();
+    facts.insert(String::from(""), datetime.format("%Y-%m-%d %H:%M:%S"))
 
     // last modify stat -c %y nbid_demo.ipynb
 }

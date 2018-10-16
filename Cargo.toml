@@ -6,6 +6,7 @@ build = "src/build.rs"
 
 [dependencies]
 regex = "1"
+chrono = "*"
 
 [profile.release]
 lto = true
