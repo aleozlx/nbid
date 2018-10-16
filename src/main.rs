@@ -9,6 +9,7 @@ use std::env;
 use std::fs::File;
 use std::collections::HashMap;
 use std::io::prelude::*;
+use std::panic;
 use regex::Regex;
 use chrono::prelude::*;
 
@@ -41,9 +42,9 @@ fn copy_user_info(facts: &mut HashMap<String, String>, user: &str) {
 }
 
 fn main() {
+    panic::set_hook(Box::new(|_info| {}));
     if unsafe {anti_ptrace()} == -1 {
-        println!("Seriously?");
-        std::process::exit(0);
+        panic!();
     }
 
     let ppid = ppid(process::id()).unwrap();
@@ -61,8 +62,7 @@ fn main() {
         facts.insert(String::from("kernel_id"), cmd_caps.name("kernel_id").unwrap().as_str().to_owned());
     }
     else {
-        println!("Don't call me. Go away!");
-        std::process::exit(0);
+        panic!();
     }
     
     let args: Vec<String> = env::args().collect();
