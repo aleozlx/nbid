@@ -44,6 +44,8 @@ int anti_ptrace() {
 // ref: https://unix.stackexchange.com/questions/413697/how-do-i-hide-tracerpid-from-a-process
 #if 1
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 int anti_ptrace() {
     FILE *f = fopen("/proc/self/status", "r");
     int pid = 0;

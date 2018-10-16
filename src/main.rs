@@ -51,6 +51,8 @@ fn main() {
     let rule_cmd = Regex::new(r"/dsa/home/(?P<sso>\w+)/.*/kernel-(?P<kernel_id>.*)\.json").unwrap();
     // let rule_url = Regex::new(r"user/(?P<sso>\w+)/notebooks/(?P<notebook>.*)$").unwrap();
     let mut facts = HashMap::new();
+    let datetime: DateTime<Local> = Local::now();
+    facts.insert(String::from("timestamp"), datetime.format("%Y-%m-%d %H:%M:%S").to_string());
     facts.insert(String::from("pid"), ppid.to_string().to_owned());
     let username;
     if let Some(cmd_caps) = rule_cmd.captures(cmd) {
@@ -66,15 +68,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
         let notebook_path = &args[1];
-        // if let Some(url_caps) = rule_url.captures(url) {
-        //     facts.insert(String::from("notebook"), url_caps.name("notebook").unwrap().as_str().to_owned());
-        //     let sso_url = url_caps.name("sso").unwrap().as_str().to_owned();
-        //     if facts["sso"] != sso_url {
-        //         // sso_url appears when it doesn't match sso from cmdline, which is fishy.
-        //         facts.insert(String::from("sso_url"), url_caps.name("sso").unwrap().as_str().to_owned());
-        //         facts.entry(String::from("suspicious")).or_insert(String::from("yes"));
-        //     }
-        // }
+        facts.insert(String::from("notebook"), notebook_path.to_owned());
     }
 
     if !facts.contains_key("sso_url") {
@@ -83,9 +77,6 @@ fn main() {
     for (k, v) in facts.iter() {
         println!("{} {}", k, v);
     }
-    
-    let datetime: DateTime<Local> = Local::now();
-    facts.insert(String::from(""), datetime.format("%Y-%m-%d %H:%M:%S"))
 
     // last modify stat -c %y nbid_demo.ipynb
 }
